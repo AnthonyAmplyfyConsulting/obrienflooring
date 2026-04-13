@@ -124,6 +124,10 @@ async function main() {
       additional_notes: `[${row.document_type}] ${row.file_title}`.trim(),
       job_completed_date:
         stage === 'Job Completed' ? row.last_modified || null : null,
+      next_mail_date:
+        stage === 'Job Completed' && row.last_modified
+          ? new Date(new Date(row.last_modified).getTime() + 60000).toISOString()
+          : null,
       created_at: row.last_modified || new Date().toISOString(),
     });
   }
