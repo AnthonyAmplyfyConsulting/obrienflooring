@@ -8,12 +8,13 @@ import { MoreVertical, Calendar, Phone, Mail } from 'lucide-react';
 const STAGES: PipelineStage[] = ['Estimate Done', 'Job Started', 'Payment Received', 'Job Completed'];
 
 export default function PipelinePage() {
-  const { leads, moveLeadStage } = useCrmStore();
+  const { leads, moveLeadStage, fetchLeads } = useCrmStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    fetchLeads();
+  }, [fetchLeads]);
 
   const onDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result;
@@ -86,9 +87,9 @@ export default function PipelinePage() {
                                 <div className="truncate mb-1" title={lead.address}>
                                   {lead.address}
                                 </div>
-                                {lead.additionalNotes && (
+                                {lead.additional_notes && (
                                   <div className="text-xs mt-2 p-2 bg-emerald-50 text-emerald-800 rounded-lg line-clamp-2">
-                                     {lead.additionalNotes}
+                                     {lead.additional_notes}
                                   </div>
                                 )}
                               </div>

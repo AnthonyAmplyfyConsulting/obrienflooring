@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createClient } from '../utils/supabase/client';
 
 export type PipelineStage = 'Estimate Done' | 'Job Started' | 'Payment Received' | 'Job Completed';
 
@@ -9,91 +9,114 @@ export interface Lead {
   phone: string;
   email: string;
   address: string;
-  jobCompletedDate?: string;
-  invoicePdf?: string;
-  additionalNotes?: string;
+  job_completed_date?: string | null;
+  invoice_pdf?: string | null;
+  additional_notes?: string | null;
   stage?: PipelineStage | null;
-  createdAt: number;
+  created_at: string;
 }
 
 interface CrmState {
   leads: Lead[];
-  addLead: (lead: Omit<Lead, 'id' | 'createdAt'>) => void;
-  updateLead: (id: string, updates: Partial<Lead>) => void;
-  deleteLead: (id: string) => void;
-  moveLeadStage: (id: string, stage: PipelineStage | null) => void;
+  isLoading: boolean;
+  fetchLeads: () => Promise<void>;
+  addLead: (lead: Omit<Lead, 'id' | 'created_at'>) => Promise<void>;
+  updateLead: (id: string, updates: Partial<Lead>) => Promise<void>;
+  deleteLead: (id: string) => Promise<void>;
+  moveLeadStage: (id: string, stage: PipelineStage | null) => Promise<void>;
 }
 
-export const useCrmStore = create<CrmState>()(
-  persist(
-    (set, get) => ({
-      leads: [
-        {
-          id: '1',
-          name: 'John Doe',
-          phone: '(555) 123-4567',
-          email: 'john@example.com',
-          address: '123 Main St, Boston, MA',
-          additionalNotes: 'Needs hardwood in living room',
-          stage: 'Estimate Done',
-          createdAt: Date.now() - 100000,
-        },
-        {
-          id: '2',
-          name: 'Sarah Smith',
-          phone: '(555) 987-6543',
-          email: 'sarah.smith@example.com',
-          address: '456 Oak View, Cambridge, MA',
-          additionalNotes: 'Laminate in basement',
-          stage: 'Job Started',
-          createdAt: Date.now() - 200000,
-        }
-      ],
-      addLead: (lead) =>
-        set((state) => ({
-          leads: [
-            ...state.leads,
-            { ...lead, id: Math.random().toString(36).substring(2, 9), createdAt: Date.now() },
-          ],
-        })),
-      updateLead: (id, updates) =>
-        set((state) => ({
-          leads: state.leads.map((lead) =>
-            lead.id === id ? { ...lead, ...updates } : lead
-          ),
-        })),
-      deleteLead: (id) =>
-        set((state) => ({
-          leads: state.leads.filter((lead) => lead.id !== id),
-        })),
-      moveLeadStage: async (id, stage) => {
-        const { leads } = get();
-        const lead = leads.find((l: Lead) => l.id === id);
-
-        if (stage === 'Job Completed' && lead && lead.stage !== 'Job Completed') {
-          // Trigger local API route to bypass CORS
-          try {
-            await fetch('/api/webhook', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ ...lead, stage: 'Job Completed' }),
-            });
-          } catch (error) {
-            console.error('Failed to trigger webhook:', error);
-          }
-        }
-
-        set((state) => ({
-          leads: state.leads.map((l: Lead) =>
-            l.id === id ? { ...l, stage, jobCompletedDate: stage === 'Job Completed' ? new Date().toLocaleDateString() : l.jobCompletedDate } : l
-          ),
-        }));
-      },
-    }),
-    {
-      name: 'obriens-crm-storage',
+export const useCrmStore = create<CrmState>((set, get) => ({
+  leads: [],
+  isLoading: false,
+  fetchLeads: async () => {
+    set({ isLoading: true });
+    const supabase = createClient();
+    const { data, error } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching leads:', error);
+    } else if (data) {
+      set({ leads: data as Lead[] });
     }
-  )
-);
+    set({ isLoading: false });
+  },
+  addLead: async (lead) => {
+    const supabase = createClient();
+    const { data, error } = await supabase.from('leads').insert([lead]).select().single();
+    
+    if (error) {
+      console.error('Error adding lead:', error);
+    } else if (data) {
+      set((state) => ({ leads: [data as Lead, ...state.leads] }));
+    }
+  },
+  updateLead: async (id, updates) => {
+    // Optimistic update
+    const previousLeads = get().leads;
+    set((state) => ({
+      leads: state.leads.map((lead) => (lead.id === id ? { ...lead, ...updates } : lead)),
+    }));
+
+    const supabase = createClient();
+    const { error } = await supabase.from('leads').update(updates).eq('id', id);
+
+    if (error) {
+      console.error('Error updating lead:', error);
+      // Revert on failure
+      set({ leads: previousLeads });
+    }
+  },
+  deleteLead: async (id) => {
+    // Optimistic update
+    const previousLeads = get().leads;
+    set((state) => ({ leads: state.leads.filter((lead) => lead.id !== id) }));
+
+    const supabase = createClient();
+    const { error } = await supabase.from('leads').delete().eq('id', id);
+
+    if (error) {
+      console.error('Error deleting lead:', error);
+      // Revert on failure
+      set({ leads: previousLeads });
+    }
+  },
+  moveLeadStage: async (id, stage) => {
+    const { leads } = get();
+    const lead = leads.find((l: Lead) => l.id === id);
+
+    if (stage === 'Job Completed' && lead && lead.stage !== 'Job Completed') {
+      try {
+        await fetch('/api/webhook', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ...lead, stage: 'Job Completed' }),
+        });
+      } catch (error) {
+        console.error('Failed to trigger webhook:', error);
+      }
+    }
+
+    const updates: Partial<Lead> = {
+      stage,
+      job_completed_date: stage === 'Job Completed' ? new Date().toISOString() : lead?.job_completed_date || null
+    };
+
+    // Optimistic update
+    const previousLeads = leads;
+    set((state) => ({
+      leads: state.leads.map((l: Lead) => (l.id === id ? { ...l, ...updates } : l)),
+    }));
+
+    const supabase = createClient();
+    const { error } = await supabase.from('leads').update(updates).eq('id', id);
+
+    if (error) {
+      console.error('Error updating lead stage:', error);
+      // Revert on failure
+      set({ leads: previousLeads });
+    }
+  },
+}));

@@ -2,12 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Users, LayoutDashboard, LogOut } from 'lucide-react';
+import { Users, LayoutDashboard, CheckSquare, LogOut } from 'lucide-react';
 import Image from 'next/image';
+import { logout } from '@/app/actions/auth';
 
 const navigation = [
   { name: 'Leads List', href: '/leads', icon: Users },
   { name: 'Job Pipeline', href: '/pipeline', icon: LayoutDashboard },
+  { name: 'Completed Jobs', href: '/completed', icon: CheckSquare },
 ];
 
 export function Sidebar() {
@@ -26,7 +28,7 @@ export function Sidebar() {
               className="object-contain"
             />
           </div>
-          <span className="text-xl font-bold text-zinc-900 tracking-tight">O'Brien</span>
+          <span className="text-xl font-bold text-zinc-900 tracking-tight">O&apos;Brien</span>
         </div>
       </div>
       <div className="flex flex-1 flex-col overflow-y-auto px-4 py-6">
@@ -56,13 +58,13 @@ export function Sidebar() {
         </nav>
       </div>
       <div className="p-4 border-t border-zinc-100">
-        <Link
-          href="/login"
-          className="flex items-center gap-x-3 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
+        <button
+          onClick={() => logout()}
+          className="flex w-full items-center gap-x-3 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
         >
           <LogOut className="h-5 w-5 text-zinc-400" />
           Sign Out
-        </Link>
+        </button>
       </div>
     </div>
   );

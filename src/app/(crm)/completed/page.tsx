@@ -1,27 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useCrmStore, PipelineStage } from '@/store/crmStore';
-import { Plus, X, Search, FileText, MoreVertical } from 'lucide-react';
+import { useCrmStore } from '@/store/crmStore';
+import { Plus, X, Search, FileText, CheckCircle, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const STAGES: PipelineStage[] = ['Estimate Done', 'Job Started', 'Payment Received', 'Job Completed'];
-
-export default function LeadsPage() {
-  const { leads, addLead, moveLeadStage, fetchLeads } = useCrmStore();
+export default function CompletedJobsPage() {
+  const { leads, addLead, fetchLeads } = useCrmStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [invoiceFileName, setInvoiceFileName] = useState('');
 
-  // Fetch leads on layout mount
   useEffect(() => {
     fetchLeads();
   }, [fetchLeads]);
 
-  // Filter out completed jobs
-  const filteredLeads = leads.filter(
+  // Only show completed jobs
+  const completedLeads = leads.filter(
     (lead) =>
-      lead.stage !== 'Job Completed' &&
+      lead.stage === 'Job Completed' &&
       (lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lead.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
@@ -35,26 +32,35 @@ export default function LeadsPage() {
       email: formData.get('email') as string,
       address: formData.get('address') as string,
       additional_notes: formData.get('notes') as string,
-      stage: 'Estimate Done', 
-      invoice_pdf: invoiceFileName || null,
+      stage: 'Job Completed', 
+      job_completed_date: new Date().toLocaleDateString(),
+      invoice_pdf: invoiceFileName || undefined,
     });
     setInvoiceFileName('');
     setIsModalOpen(false);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setInvoiceFileName(e.target.files[0].name);
+    } else {
+      setInvoiceFileName('');
+    }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900 tracking-tight">Leads</h1>
-          <p className="text-sm text-zinc-500 mt-1">Manage your clients and jobs.</p>
+          <h1 className="text-2xl font-bold text-zinc-900 tracking-tight">Completed Jobs</h1>
+          <p className="text-sm text-zinc-500 mt-1">Review your finished projects and invoices.</p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
           className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 transition-colors"
         >
           <Plus className="h-5 w-5" />
-          Add Job
+          Add Completed Job
         </button>
       </div>
 
@@ -66,7 +72,7 @@ export default function LeadsPage() {
             </div>
             <input
               type="text"
-              placeholder="Search leads..."
+              placeholder="Search completed jobs..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="block w-full rounded-xl border-0 py-2 pl-10 pr-3 text-zinc-900 ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:text-sm sm:leading-6"
@@ -78,16 +84,15 @@ export default function LeadsPage() {
           <table className="min-w-full divide-y divide-zinc-200">
             <thead className="bg-zinc-50">
               <tr>
-                <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-zinc-900 sm:pl-6">Client Details</th>
+                <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-zinc-900 sm:pl-6">Customer Name</th>
                 <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-zinc-900">Contact</th>
                 <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-zinc-900">Address</th>
-                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-zinc-900">Status</th>
-                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-zinc-900">Date/Invoice</th>
-                <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6"><span className="sr-only">Actions</span></th>
+                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-zinc-900">Completion Date</th>
+                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-zinc-900">Invoice</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200 bg-white">
-              {filteredLeads.map((lead) => (
+              {completedLeads.map((lead) => (
                 <tr key={lead.id} className="hover:bg-zinc-50 transition-colors">
                   <td className="whitespace-nowrap py-4 pl-4 pr-3 sm:pl-6">
                     <div className="flex items-center gap-3">
@@ -107,41 +112,27 @@ export default function LeadsPage() {
                   <td className="whitespace-nowrap px-3 py-4 text-sm text-zinc-500">
                     <div className="max-w-[200px] truncate" title={lead.address}>{lead.address}</div>
                   </td>
-                  <td className="whitespace-nowrap px-3 py-4 text-sm">
-                    <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
-                      {lead.stage || 'No Stage'}
-                    </span>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-zinc-500">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-emerald-500" />
+                      {lead.job_completed_date || 'N/A'}
+                    </div>
                   </td>
                   <td className="whitespace-nowrap px-3 py-4 text-sm text-zinc-500">
-                      {lead.job_completed_date ? <div>Completed: {lead.job_completed_date}</div> : <div>Not completed</div>}
                       {lead.invoice_pdf ? (
                         <button className="flex items-center gap-1 text-emerald-600 hover:text-emerald-700 mt-1">
                           <FileText className="h-4 w-4" /> {lead.invoice_pdf}
                         </button>
                       ) : (
-                        <button className="flex items-center gap-1 text-emerald-600 hover:text-emerald-700 mt-1">
-                          <FileText className="h-4 w-4" /> Wait for Invoice
-                        </button>
+                        <span className="text-zinc-400">No Invoice</span>
                       )}
-                  </td>
-                  <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                    <select
-                        value={lead.stage || ''}
-                        onChange={(e) => moveLeadStage(lead.id, e.target.value as PipelineStage)}
-                        className="rounded-md border-0 py-1.5 pl-3 pr-8 text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-emerald-600 sm:text-sm sm:leading-6"
-                    >
-                        <option value="" disabled>Move to...</option>
-                        {STAGES.map(stage => (
-                            <option key={stage} value={stage}>{stage}</option>
-                        ))}
-                    </select>
                   </td>
                 </tr>
               ))}
-              {filteredLeads.length === 0 && (
+              {completedLeads.length === 0 && (
                 <tr>
-                   <td colSpan={6} className="py-12 text-center text-zinc-500">
-                     No leads found. Create your first job!
+                   <td colSpan={5} className="py-12 text-center text-zinc-500">
+                     No completed jobs found.
                    </td>
                 </tr>
               )}
@@ -167,7 +158,7 @@ export default function LeadsPage() {
               className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden"
             >
               <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-4">
-                <h2 className="text-lg font-semibold text-zinc-900">Add New Job</h2>
+                <h2 className="text-lg font-semibold text-zinc-900">Add Completed Job</h2>
                 <button
                   onClick={() => setIsModalOpen(false)}
                   className="rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 transition-colors"
@@ -196,26 +187,15 @@ export default function LeadsPage() {
                     <input type="text" name="address" id="address" required className="mt-1 block w-full rounded-xl border-0 py-2 px-3 text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:text-sm" />
                   </div>
                   <div>
-                    <label htmlFor="invoice" className="block text-sm font-medium text-zinc-700">Invoice File (Optional)</label>
+                    <label htmlFor="invoice" className="block text-sm font-medium text-zinc-700">Invoice File (PDF/Image)</label>
                     <div className="mt-1 flex items-center justify-center w-full">
-                        <label htmlFor="invoice-upload" className="flex flex-col items-center justify-center w-full h-24 border-2 border-zinc-300 border-dashed rounded-xl cursor-pointer bg-zinc-50 hover:bg-zinc-100 transition-colors">
+                        <label htmlFor="invoice-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-zinc-300 border-dashed rounded-xl cursor-pointer bg-zinc-50 hover:bg-zinc-100 transition-colors">
                             <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                <Upload className="w-8 h-8 mb-3 text-zinc-400" />
                                 <p className="mb-2 text-sm text-zinc-500"><span className="font-semibold">Click to upload</span> or drag and drop</p>
                                 <p className="text-xs text-zinc-500">{invoiceFileName || 'SVG, PNG, JPG or PDF'}</p>
                             </div>
-                            <input 
-                              id="invoice-upload" 
-                              type="file" 
-                              className="hidden" 
-                              accept=".pdf,image/*" 
-                              onChange={(e) => {
-                                if (e.target.files && e.target.files.length > 0) {
-                                  setInvoiceFileName(e.target.files[0].name);
-                                } else {
-                                  setInvoiceFileName('');
-                                }
-                              }} 
-                            />
+                            <input id="invoice-upload" type="file" className="hidden" accept=".pdf,image/*" onChange={handleFileChange} />
                         </label>
                     </div>
                   </div>
