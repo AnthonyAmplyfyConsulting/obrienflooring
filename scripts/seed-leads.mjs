@@ -128,6 +128,7 @@ async function main() {
         stage === 'Job Completed' && row.last_modified
           ? new Date(new Date(row.last_modified).getTime() + 60000).toISOString()
           : null,
+      mail_sent: stage === 'Job Completed' ? false : null,
       created_at: row.last_modified || new Date().toISOString(),
     });
   }
