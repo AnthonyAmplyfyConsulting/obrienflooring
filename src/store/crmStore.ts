@@ -26,6 +26,7 @@ interface CrmState {
   updateLead: (id: string, updates: Partial<Lead>) => Promise<void>;
   deleteLead: (id: string) => Promise<void>;
   moveLeadStage: (id: string, stage: PipelineStage | null) => Promise<void>;
+  triggerReviewWebhook: (lead: Lead) => Promise<boolean>;
 }
 
 export const useCrmStore = create<CrmState>((set, get) => ({
@@ -87,20 +88,6 @@ export const useCrmStore = create<CrmState>((set, get) => ({
     const { leads } = get();
     const lead = leads.find((l: Lead) => l.id === id);
 
-    if (stage === 'Job Completed' && lead && lead.stage !== 'Job Completed') {
-      try {
-        await fetch('/api/webhook', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ ...lead, stage: 'Job Completed' }),
-        });
-      } catch (error) {
-        console.error('Failed to trigger webhook:', error);
-      }
-    }
-
     const updates: Partial<Lead> = {
       stage,
       job_completed_date: stage === 'Job Completed' ? new Date().toISOString() : lead?.job_completed_date || null,
@@ -123,4 +110,29 @@ export const useCrmStore = create<CrmState>((set, get) => ({
       set({ leads: previousLeads });
     }
   },
+  triggerReviewWebhook: async (lead: Lead) => {
+    try {
+      const response = await fetch('/api/review-webhook', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: lead.id,
+          name: lead.name,
+          phone: lead.phone,
+          email: lead.email,
+          address: lead.address,
+          additional_notes: lead.additional_notes,
+          job_completed_date: lead.job_completed_date,
+          stage: 'Job Completed',
+        }),
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('Failed to trigger review webhook:', error);
+      return false;
+    }
+  },
 }));
+
