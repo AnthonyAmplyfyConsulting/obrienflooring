@@ -296,7 +296,7 @@ export default function CompletedJobsPage() {
             </motion.div>
           </div>
         )}
-      </AnimatePresence
+      </AnimatePresence>
     </div>
   );
 }

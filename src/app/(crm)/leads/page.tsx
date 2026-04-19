@@ -419,7 +419,7 @@ export default function LeadsPage() {
             </motion.div>
           </div>
         )}
-      </AnimatePresence
+      </AnimatePresence>
     </div>
   );
 }
