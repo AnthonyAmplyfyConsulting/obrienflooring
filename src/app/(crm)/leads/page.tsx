@@ -2,18 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import { useCrmStore, PipelineStage, Lead } from '@/store/crmStore';
-import { Plus, X, Search, FileText } from 'lucide-react';
+import { Plus, X, Search, FileText, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const STAGES: PipelineStage[] = ['Estimate Done', 'Job Started', 'Payment Received', 'Job Completed'];
 
 export default function LeadsPage() {
-  const { leads, addLead, moveLeadStage, fetchLeads, triggerReviewWebhook } = useCrmStore();
+  const { leads, addLead, moveLeadStage, fetchLeads, triggerReviewWebhook, deleteLead } = useCrmStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [invoiceFileName, setInvoiceFileName] = useState('');
   const [reviewPromptLead, setReviewPromptLead] = useState<Lead | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [deleteConfirmLead, setDeleteConfirmLead] = useState<Lead | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch leads on layout mount
   useEffect(() => {
@@ -50,6 +52,18 @@ export default function LeadsPage() {
 
   const handleReviewNo = () => {
     setReviewPromptLead(null);
+  };
+
+  const handleDeleteYes = async () => {
+    if (!deleteConfirmLead) return;
+    setIsDeleting(true);
+    await deleteLead(deleteConfirmLead.id);
+    setIsDeleting(false);
+    setDeleteConfirmLead(null);
+  };
+
+  const handleDeleteNo = () => {
+    setDeleteConfirmLead(null);
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -151,16 +165,25 @@ export default function LeadsPage() {
                       )}
                   </td>
                   <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                    <select
-                        value={lead.stage || ''}
-                        onChange={(e) => handleStageChange(lead, e.target.value as PipelineStage)}
-                        className="rounded-md border-0 py-1.5 pl-3 pr-8 text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-emerald-600 sm:text-sm sm:leading-6"
-                    >
-                        <option value="" disabled>Move to...</option>
-                        {STAGES.map(stage => (
-                            <option key={stage} value={stage}>{stage}</option>
-                        ))}
-                    </select>
+                    <div className="flex items-center justify-end gap-3">
+                      <select
+                          value={lead.stage || ''}
+                          onChange={(e) => handleStageChange(lead, e.target.value as PipelineStage)}
+                          className="rounded-md border-0 py-1.5 pl-3 pr-8 text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-emerald-600 sm:text-sm sm:leading-6"
+                      >
+                          <option value="" disabled>Move to...</option>
+                          {STAGES.map(stage => (
+                              <option key={stage} value={stage}>{stage}</option>
+                          ))}
+                      </select>
+                      <button
+                        onClick={() => setDeleteConfirmLead(lead)}
+                        className="text-zinc-400 hover:text-red-500 transition-colors p-1.5 rounded-md hover:bg-red-50 flex-shrink-0"
+                        title="Delete Job"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -348,6 +371,55 @@ export default function LeadsPage() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Delete Confirmation Prompt */}
+      <AnimatePresence>
+        {deleteConfirmLead && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-zinc-900/40 backdrop-blur-sm"
+              onClick={handleDeleteNo}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 30 }}
+              transition={{ type: 'spring', duration: 0.5, bounce: 0.3 }}
+              className="relative w-full max-w-sm rounded-2xl bg-white shadow-2xl overflow-hidden"
+            >
+              <div className="h-1.5 bg-red-500" />
+              <div className="p-8 text-center">
+                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
+                  <Trash2 className="h-8 w-8 text-red-600" />
+                </div>
+                <h2 className="text-xl font-bold text-zinc-900 mb-2">Delete Job?</h2>
+                <p className="text-sm text-zinc-500 mb-6">
+                  Are you sure you want to delete <span className="font-semibold text-zinc-800">{deleteConfirmLead.name}</span>? This action cannot be undone and will permanently remove it from the database.
+                </p>
+                <div className="flex gap-4">
+                  <button
+                    onClick={handleDeleteNo}
+                    disabled={isDeleting}
+                    className="flex-1 rounded-xl px-5 py-3 text-sm font-semibold text-zinc-700 bg-zinc-100 hover:bg-zinc-200 shadow-sm transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteYes}
+                    disabled={isDeleting}
+                    className="flex-1 rounded-xl px-5 py-3 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 shadow-sm transition-all disabled:opacity-50"
+                  >
+                    {isDeleting ? 'Deleting...' : 'Delete'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence
     </div>
   );
 }
