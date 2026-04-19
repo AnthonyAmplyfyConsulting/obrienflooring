@@ -91,7 +91,7 @@ export const useCrmStore = create<CrmState>((set, get) => ({
     const updates: Partial<Lead> = {
       stage,
       job_completed_date: stage === 'Job Completed' ? new Date().toISOString() : lead?.job_completed_date || null,
-      next_mail_date: stage === 'Job Completed' ? new Date(Date.now() + 60000).toISOString() : lead?.next_mail_date || null,
+      next_mail_date: stage === 'Job Completed' ? new Date(new Date().setFullYear(new Date().getFullYear() + 5)).toISOString() : lead?.next_mail_date || null,
       mail_sent: stage === 'Job Completed' ? false : lead?.mail_sent || null
     };
 
