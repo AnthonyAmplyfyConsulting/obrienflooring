@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 // Lob Automation n8n Webhook Endpoint
-const N8N_WEBHOOK_URL = 'https://amplyfyconsulting.app.n8n.cloud/webhook-test/e0e46c3d-d398-49c0-ad47-d45fb7bfce6b';
+const N8N_WEBHOOK_URL = 'https://amplyfyconsulting.app.n8n.cloud/webhook/e0e46c3d-d398-49c0-ad47-d45fb7bfce6b';
 
 export async function GET(request: Request) {
   // Validate Vercel Cron Request
@@ -56,7 +56,14 @@ export async function GET(request: Request) {
             phone: lead.phone,
             email: lead.email,
             job_completed_date: lead.job_completed_date,
-            automation_type: '5_YEAR_ANNIVERSARY'
+            automation_type: '5_YEAR_ANNIVERSARY',
+            postcard_front: `${supabaseUrl}/storage/v1/object/public/Postcards/Postcard%20front.png`,
+            postcard_back: `${supabaseUrl}/storage/v1/object/public/Postcards/Postcard%20back.png`,
+            from_name: "O'Brien Flooring",
+            from_address_line1: '53 Union St',
+            from_address_city: 'Easthampton',
+            from_address_state: 'MA',
+            from_address_zip: '01027',
           }),
         });
 
