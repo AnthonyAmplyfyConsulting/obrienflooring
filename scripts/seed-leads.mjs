@@ -62,38 +62,30 @@ function parseCSVLine(line) {
 
 // ── Clean phone number ──────────────────────────────────────────────────────
 function cleanPhone(raw) {
-  if (!raw) return '';
-  // Remove wrapping parens on the whole thing, normalize
+  if (!raw || raw === 'N/A') return '';
   return raw.replace(/^\(/, '').replace(/\)$/, '').trim();
-}
-
-// ── All rows are completed jobs ─────────────────────────────────────────
-function deriveStage() {
-  return 'Job Completed';
 }
 
 // ── Main ────────────────────────────────────────────────────────────────────
 async function main() {
   console.log('📂 Reading CSV...');
   const raw = readFileSync(CSV_PATH, 'utf-8');
-  const lines = raw.split('\n').filter((l) => l.trim());
+  // Handle \r\n and \r line endings
+  const lines = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter((l) => l.trim());
 
   // Skip header
   const header = parseCSVLine(lines[0]);
   console.log('   Headers:', header.join(' | '));
 
+  // New CSV columns: file_url, last_modified, customer_name, phone, address
   const rows = lines.slice(1).map((line) => {
     const cols = parseCSVLine(line);
     return {
-      source_folder: cols[0] || '',
-      accessibility_status: cols[1] || '',
-      file_title: cols[2] || '',
-      file_url: cols[3] || '',
-      last_modified: cols[4] || '',
-      customer_name: cols[5] || '',
-      phone: cols[6] || '',
-      address: cols[7] || '',
-      document_type: cols[8] || '',
+      file_url: cols[0] || '',
+      last_modified: cols[1] || '',
+      customer_name: cols[2] || '',
+      phone: cols[3] || '',
+      address: cols[4] || '',
     };
   });
 
@@ -108,27 +100,24 @@ async function main() {
     console.log('   ✅ Existing leads cleared.');
   }
 
-  // ── Build Supabase rows (all 102 rows, no dedup) ────────────────────────
+  // ── Build Supabase rows ─────────────────────────────────────────────────
   const leads = [];
 
   for (const row of rows) {
-    const stage = deriveStage();
-
     leads.push({
       name: row.customer_name,
       phone: cleanPhone(row.phone),
       email: '', // Not available in CSV
       address: row.address,
-      stage,
+      stage: 'Job Completed',
       invoice_pdf: row.file_url || null,
-      additional_notes: `[${row.document_type}] ${row.file_title}`.trim(),
-      job_completed_date:
-        stage === 'Job Completed' ? row.last_modified || null : null,
+      additional_notes: '',
+      job_completed_date: row.last_modified || null,
       next_mail_date:
-        stage === 'Job Completed' && row.last_modified
+        row.last_modified
           ? new Date(new Date(row.last_modified).getTime() + 60000).toISOString()
           : null,
-      mail_sent: stage === 'Job Completed' ? false : null,
+      mail_sent: false,
       created_at: row.last_modified || new Date().toISOString(),
     });
   }
@@ -143,7 +132,7 @@ async function main() {
     const { data, error } = await supabase.from('leads').insert(batch).select();
 
     if (error) {
-      console.error(`❌  Batch ${i / BATCH_SIZE + 1} failed:`, error.message);
+      console.error(`❌  Batch ${Math.floor(i / BATCH_SIZE) + 1} failed:`, error.message);
       errors += batch.length;
     } else {
       inserted += data.length;
