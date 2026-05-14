@@ -94,7 +94,8 @@ export default function CompletedJobsPage() {
           </div>
         </div>
         
-        <div className="overflow-x-auto">
+        {/* Desktop table view */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="min-w-full divide-y divide-zinc-200">
             <thead className="bg-zinc-50">
               <tr>
@@ -163,6 +164,65 @@ export default function CompletedJobsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile card view */}
+        <div className="md:hidden divide-y divide-zinc-100">
+          {completedLeads.map((lead) => (
+            <div key={lead.id} className="p-4 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-10 w-10 shrink-0 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm">
+                    {lead.name.charAt(0)}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-medium text-zinc-900 truncate">{lead.name}</div>
+                    <div className="flex items-center gap-1 text-xs text-emerald-600 mt-0.5">
+                      <CheckCircle className="h-3.5 w-3.5" />
+                      <span>{lead.job_completed_date || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setDeleteConfirmLead(lead)}
+                  className="text-zinc-400 hover:text-red-500 transition-colors p-1.5 rounded-md hover:bg-red-50 flex-shrink-0"
+                  title="Delete Job"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2 text-sm">
+                <div className="flex items-center gap-2 text-zinc-500">
+                  <span className="font-medium text-zinc-700 shrink-0">Phone:</span>
+                  <a href={`tel:${lead.phone}`} className="text-emerald-600 truncate">{lead.phone}</a>
+                </div>
+                <div className="flex items-center gap-2 text-zinc-500">
+                  <span className="font-medium text-zinc-700 shrink-0">Email:</span>
+                  <a href={`mailto:${lead.email}`} className="text-emerald-600 truncate">{lead.email}</a>
+                </div>
+                <div className="flex items-start gap-2 text-zinc-500">
+                  <span className="font-medium text-zinc-700 shrink-0">Address:</span>
+                  <span className="truncate">{lead.address}</span>
+                </div>
+                {lead.invoice_pdf ? (
+                  <div className="flex items-center gap-1 text-emerald-600 text-xs mt-1">
+                    <FileText className="h-3.5 w-3.5" /> {lead.invoice_pdf}
+                  </div>
+                ) : null}
+                {lead.additional_notes && (
+                  <div className="text-xs mt-1 p-2 bg-zinc-50 text-zinc-600 rounded-lg line-clamp-2">
+                    {lead.additional_notes}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+          {completedLeads.length === 0 && (
+            <div className="py-12 text-center text-zinc-500">
+              No completed jobs found.
+            </div>
+          )}
+        </div>
       </div>
 
       <AnimatePresence>
@@ -196,7 +256,7 @@ export default function CompletedJobsPage() {
                     <label htmlFor="name" className="block text-sm font-medium text-zinc-700">Client Name</label>
                     <input type="text" name="name" id="name" required className="mt-1 block w-full rounded-xl border-0 py-2 px-3 text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:text-sm" />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label htmlFor="phone" className="block text-sm font-medium text-zinc-700">Phone</label>
                         <input type="tel" name="phone" id="phone" required className="mt-1 block w-full rounded-xl border-0 py-2 px-3 text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:text-sm" />

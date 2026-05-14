@@ -62,19 +62,19 @@ export default function PipelinePage() {
   }
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col space-y-6">
+    <div className="h-[calc(100vh-8rem)] lg:h-[calc(100vh-8rem)] flex flex-col space-y-4 sm:space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-zinc-900 tracking-tight">Job Pipeline</h1>
         <p className="text-sm text-zinc-500 mt-1">Track the progress of all current jobs.</p>
       </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex-1 flex gap-6 overflow-x-auto pb-4">
+        <div className="flex-1 flex gap-3 sm:gap-6 overflow-x-auto pb-4 snap-x snap-mandatory">
           {STAGES.map((stage) => {
             const stageLeads = leads.filter((lead) => lead.stage === stage);
 
             return (
-              <div key={stage} className="flex-shrink-0 w-80 flex flex-col bg-zinc-100 rounded-2xl">
+              <div key={stage} className="flex-shrink-0 w-[75vw] sm:w-80 flex flex-col bg-zinc-100 rounded-2xl snap-start">
                 <div className="p-4 flex items-center justify-between border-b border-zinc-200">
                   <h3 className="font-semibold text-zinc-900">{stage}</h3>
                   <span className="inline-flex items-center justify-center rounded-full bg-zinc-200 px-2.5 py-0.5 text-xs font-medium text-zinc-700">

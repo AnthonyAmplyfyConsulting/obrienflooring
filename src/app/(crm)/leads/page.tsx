@@ -113,8 +113,9 @@ export default function LeadsPage() {
             />
           </div>
         </div>
-        
-        <div className="overflow-x-auto">
+
+        {/* Desktop table view */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="min-w-full divide-y divide-zinc-200">
             <thead className="bg-zinc-50">
               <tr>
@@ -197,6 +198,72 @@ export default function LeadsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile card view */}
+        <div className="md:hidden divide-y divide-zinc-100">
+          {filteredLeads.map((lead) => (
+            <div key={lead.id} className="p-4 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-10 w-10 shrink-0 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm">
+                    {lead.name.charAt(0)}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-medium text-zinc-900 truncate">{lead.name}</div>
+                    <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20 mt-1">
+                      {lead.stage || 'No Stage'}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setDeleteConfirmLead(lead)}
+                  className="text-zinc-400 hover:text-red-500 transition-colors p-1.5 rounded-md hover:bg-red-50 flex-shrink-0"
+                  title="Delete Job"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2 text-sm">
+                <div className="flex items-center gap-2 text-zinc-500">
+                  <span className="font-medium text-zinc-700 shrink-0">Phone:</span>
+                  <a href={`tel:${lead.phone}`} className="text-emerald-600 truncate">{lead.phone}</a>
+                </div>
+                <div className="flex items-center gap-2 text-zinc-500">
+                  <span className="font-medium text-zinc-700 shrink-0">Email:</span>
+                  <a href={`mailto:${lead.email}`} className="text-emerald-600 truncate">{lead.email}</a>
+                </div>
+                <div className="flex items-start gap-2 text-zinc-500">
+                  <span className="font-medium text-zinc-700 shrink-0">Address:</span>
+                  <span className="truncate">{lead.address}</span>
+                </div>
+                {lead.additional_notes && (
+                  <div className="text-xs mt-1 p-2 bg-zinc-50 text-zinc-600 rounded-lg line-clamp-2">
+                    {lead.additional_notes}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <select
+                  value={lead.stage || ''}
+                  onChange={(e) => handleStageChange(lead, e.target.value as PipelineStage)}
+                  className="flex-1 rounded-lg border-0 py-2 pl-3 pr-8 text-sm text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-emerald-600"
+                >
+                  <option value="" disabled>Move to...</option>
+                  {STAGES.map(stage => (
+                    <option key={stage} value={stage}>{stage}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          ))}
+          {filteredLeads.length === 0 && (
+            <div className="py-12 text-center text-zinc-500">
+              No leads found. Create your first job!
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Add New Job Modal */}
@@ -231,7 +298,7 @@ export default function LeadsPage() {
                     <label htmlFor="name" className="block text-sm font-medium text-zinc-700">Client Name</label>
                     <input type="text" name="name" id="name" required className="mt-1 block w-full rounded-xl border-0 py-2 px-3 text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:text-sm" />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label htmlFor="phone" className="block text-sm font-medium text-zinc-700">Phone</label>
                         <input type="tel" name="phone" id="phone" required className="mt-1 block w-full rounded-xl border-0 py-2 px-3 text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:text-sm" />
