@@ -1,7 +1,16 @@
 import { NextResponse } from 'next/server';
+import { createClient } from '@/utils/supabase/server';
 
 export async function POST(request: Request) {
   try {
+    // Verify the user is authenticated before forwarding to n8n
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const payload = await request.json();
 
     const response = await fetch('https://amplyfyconsulting.app.n8n.cloud/webhook/59146b02-b62d-4b99-add0-66cbe02f9bbe', {

@@ -1,15 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Use the service_role key to bypass RLS and create users
-// You'll need to provide SUPABASE_SERVICE_ROLE_KEY as an env variable or replace below
-const supabaseUrl = 'https://vttimxwzfyrdlwlumvhg.supabase.co';
+// Use the service_role key to bypass RLS and create users.
+// All credentials must be provided via environment variables — never hardcode them.
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const userEmail = process.env.NEW_USER_EMAIL;
+const userPassword = process.env.NEW_USER_PASSWORD;
 
-if (!supabaseServiceRoleKey) {
-  console.error('❌ Missing SUPABASE_SERVICE_ROLE_KEY environment variable.');
+if (!supabaseUrl || !supabaseServiceRoleKey || !userEmail || !userPassword) {
+  console.error('❌ Missing required environment variables.');
   console.error('');
   console.error('Run this script with:');
-  console.error('  SUPABASE_SERVICE_ROLE_KEY=your_service_role_key node scripts/add-user.mjs');
+  console.error('  NEXT_PUBLIC_SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... NEW_USER_EMAIL=... NEW_USER_PASSWORD=... node scripts/add-user.mjs');
   console.error('');
   console.error('You can find the service_role key in your Supabase dashboard:');
   console.error('  Settings → API → service_role (secret)');
@@ -24,8 +26,8 @@ const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
 });
 
 async function addUser() {
-  const email = 'obrienflooring2001@gmail.com';
-  const password = 'Obrien2001$';
+  const email = userEmail;
+  const password = userPassword;
 
   console.log(`\n🔐 Creating authorized user: ${email}\n`);
 
